@@ -1,0 +1,13 @@
+{
+  "name": "pagewitness",
+  "version": "1.0.0",
+  "description": "Consensus-backed, semantically verified webpage visual attestations on GenLayer",
+  "type": "module",
+  "scripts": {
+    "deploy": "node scripts/deploy.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "genlayer-js": "^0.2.1"
+  }
+}
