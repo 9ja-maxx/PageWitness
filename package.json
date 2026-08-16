@@ -7,7 +7,7 @@
     "deploy": "node scripts/deploy.mjs"
   },
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "genlayer-js": "^0.2.1"
+    "dotenv": "16.4.7",
+    "genlayer-js": "1.1.8"
   }
 }
