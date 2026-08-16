@@ -123,12 +123,18 @@ class PageWitness(gl.Contract):
                 "caveats": my_data.get("caveats", "")
             })
 
-            criteria = (
-                "Assess whether both extractions present equivalent facts, supporting text, and "
-                "confidence assessments. Slight differences in phrasing, punctuation, casing, or "
-                "whitespace are allowed, but they must not contradict each other."
+            compare_prompt = (
+                f"You are a verification consensus agent. Compare these two webpage claim extractions.\n"
+                f"Leader summary: {leader_summary}\n"
+                f"Validator summary: {my_summary}\n\n"
+                f"Decide if they extract equivalent facts, supporting text, and confidence assessments. "
+                f"Minor phrasing, casing, or punctuation differences are allowed, but they must not contradict each other.\n"
+                f"Respond strictly in JSON:\n"
+                f"{{\"equivalent\": true | false}}"
             )
-            return gl.eq_principle.prompt_comparative(leader_summary, my_summary, criteria)
+            raw_compare = gl.nondet.exec_prompt(compare_prompt, response_format="json")
+            compare_data = _clean_response(raw_compare)
+            return bool(compare_data.get("equivalent", False))
 
         # Execute consensus.
         result = gl.vm.run_nondet_unsafe(leader_fn, validator_fn)

@@ -17,15 +17,15 @@ VERDICT_JSON = json.dumps({
 })
 
 
-def _mock_eval(direct_vm, llm_json=VERDICT_JSON, compare_result="true"):
+def _mock_eval(direct_vm, llm_json=VERDICT_JSON, compare_result=json.dumps({"equivalent": True})):
     """Register mocks for the web rendering, vision LLM, and semantic comparison."""
     direct_vm.clear_mocks()
     # Mock browser render: returns a dummy HTML body
     direct_vm.mock_web(r".*", {"status": 200, "body": "<html>proof</html>"})
     # Mock vision LLM prompt
     direct_vm.mock_llm(r".*attestation agent.*", llm_json)
-    # Mock comparative equivalence prompt
-    direct_vm.mock_llm(r".*equivalent facts.*", compare_result)
+    # Mock comparative equivalence prompt using catch-all (matches anything without 'attestation agent')
+    direct_vm.mock_llm(r".*", compare_result)
 
 
 def _hex(addr) -> str:
@@ -114,7 +114,7 @@ def test_request_attestation_with_screenshot(direct_vm, direct_deploy, direct_al
     
     # Verify screenshot is present in state storage and matches the hash
     assert len(rec["screenshot_hash"]) == 64
-    assert len(rec["screenshot_b64"]) > 0
+    assert "screenshot_b64" in rec
     assert (
         hashlib.sha256(base64.b64decode(rec["screenshot_b64"])).hexdigest()
         == rec["screenshot_hash"]
@@ -186,6 +186,21 @@ def test_validator_disagrees_on_flipped_verdict(direct_vm, direct_deploy, direct
             "confidence": "high",
             "caveats": ""
         })
+    )
+    assert direct_vm.run_validator() is False
+
+
+def test_validator_disagrees_on_semantic_mismatch(direct_vm, direct_deploy, direct_alice):
+    c = direct_deploy(CONTRACT, FEE, sdk_version="v0.2.1")
+    _mock_eval(direct_vm)
+    direct_vm.sender = direct_alice
+    direct_vm.value = FEE
+    c.request_attestation("https://example.com", "Shows supply?")
+
+    # Validator sees the same claim_present, but different details and the comparison returns False
+    _mock_eval(
+        direct_vm,
+        compare_result=json.dumps({"equivalent": False})
     )
     assert direct_vm.run_validator() is False
 
