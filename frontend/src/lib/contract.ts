@@ -113,6 +113,8 @@ export async function executeAttestationRequest(
   const receipt = await client.waitForTransactionReceipt({
     hash: txHash,
     status: TransactionStatus.FINALIZED,
+    retries: 250,
+    interval: 3500,
   });
 
   onStatusUpdate?.("finalized");
