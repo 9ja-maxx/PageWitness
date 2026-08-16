@@ -92,7 +92,7 @@ export interface WriteRequestResult {
 }
 
 export async function executeAttestationRequest(
-  client: GenLayerClient<never>,
+  client: GenLayerClient<any>,
   url: string,
   question: string,
   storeScreenshot: boolean,

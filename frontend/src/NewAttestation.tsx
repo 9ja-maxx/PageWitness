@@ -4,11 +4,8 @@ import { useWalletAuth } from "./wallet";
 import { executeAttestationRequest } from "./lib/contract";
 import { formatGEN, describeError } from "./lib/format";
 import {
-  Sparkles,
   Send,
-  Database,
   AlertTriangle,
-  HelpCircle,
   Clock,
   Cpu,
   CheckCircle,

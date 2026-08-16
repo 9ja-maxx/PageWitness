@@ -1,26 +1,23 @@
 import { useEffect, useRef, useState } from "react";
-import { motion, useInView, animate, AnimatePresence } from "framer-motion";
+import { motion, useInView, animate } from "framer-motion";
 import type { Attestation } from "./lib/contract";
 import { shortAddr, timeAgo, hostOf } from "./lib/format";
-import { EXPLORER_BASE } from "./config";
+import { EXPLORER_BASE, CONTRACT_ADDRESS } from "./config";
 import {
   Shield,
   ShieldAlert,
   Clock,
   ExternalLink,
-  Cpu,
   Copy,
   Check,
   AlertCircle,
   Hash,
-  Coins,
-  Globe,
   FileCode,
   Image as ImageIcon,
 } from "lucide-react";
 import confetti from "canvas-confetti";
 
-export function ClaimStatusBadge({ present }: { present: bool }) {
+export function ClaimStatusBadge({ present }: { present: boolean }) {
   return present ? (
     <span className="badge badge-success">
       <Shield size={12} className="ico" />

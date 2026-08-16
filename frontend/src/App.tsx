@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
   PRIVY_APP_ID,
   CONTRACT_ADDRESS,
@@ -13,7 +13,7 @@ import {
   fetchByRequester,
   type Attestation,
 } from "./lib/contract";
-import { shortAddr, describeError } from "./lib/format";
+import { shortAddr, describeError, formatGEN } from "./lib/format";
 import {
   StatsCard,
   AttestationRowTable,
