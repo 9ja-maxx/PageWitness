@@ -84,6 +84,10 @@ export async function fetchAttestation(id: string | number): Promise<Attestation
   return callReadContract<Attestation>("get_attestation", [Number(id)]);
 }
 
+export async function verifyScreenshotData(id: string | number, screenshotB64: string): Promise<boolean> {
+  return callReadContract<boolean>("verify_screenshot_data", [Number(id), screenshotB64]);
+}
+
 // --- Contract Write Operations ---
 
 export interface WriteRequestResult {
