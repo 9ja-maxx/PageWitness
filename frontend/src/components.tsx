@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useInView, animate } from "framer-motion";
-import type { Attestation } from "./lib/contract";
+import { type Attestation, verifyScreenshotData } from "./lib/contract";
 import { shortAddr, timeAgo, hostOf } from "./lib/format";
 import { EXPLORER_BASE, CONTRACT_ADDRESS } from "./config";
 import {
@@ -161,9 +161,43 @@ export function AttestationDetailViewer({
   onClose: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [offlineScreenshotB64, setOfflineScreenshotB64] = useState<string | null>(null);
+  const [offlineVerificationStatus, setOfflineVerificationStatus] = useState<"idle" | "verifying" | "success" | "fail">("idle");
   const [integrityStatus, setIntegrityStatus] = useState<"verifying" | "success" | "fail" | "no_capture">(
     "verifying",
   );
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setOfflineVerificationStatus("verifying");
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const result = event.target?.result as string;
+      const base64Data = result.split(",")[1];
+      setOfflineScreenshotB64(base64Data);
+      
+      try {
+        const isValid = await verifyScreenshotData(a.id, base64Data);
+        if (isValid) {
+          setOfflineVerificationStatus("success");
+          confetti({
+            particleCount: 60,
+            spread: 70,
+            origin: { y: 0.8 },
+            colors: ["#a855f7", "#3b82f6", "#10b981"],
+          });
+        } else {
+          setOfflineVerificationStatus("fail");
+        }
+      } catch (err) {
+        console.error("Error calling verify_screenshot_data:", err);
+        setOfflineVerificationStatus("fail");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
   
   const hasScreenshot = Boolean(a.screenshot_b64);
   const screenshotSource = hasScreenshot ? `data:image/png;base64,${a.screenshot_b64}` : null;
@@ -324,6 +358,47 @@ export function AttestationDetailViewer({
                   ? "Screenshot was requested but data is missing."
                   : "Screenshot storage was bypassed for this transaction to optimize gas."}
               </span>
+              {!a.stored_screenshot && (
+                <div className="offline-verify-box" style={{ marginTop: 12, width: "100%", borderTop: "1px solid var(--card-border)", paddingTop: 12 }}>
+                  <p style={{ fontSize: 12, marginBottom: 8, color: "var(--text-low)" }}>
+                    Have the offline PNG screenshot? Verify it on-chain:
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/png"
+                    onChange={handleFileUpload}
+                    style={{ display: "none" }}
+                    id="offline-screenshot-upload"
+                  />
+                  <label
+                    htmlFor="offline-screenshot-upload"
+                    className="action-btn share-btn"
+                    style={{ cursor: "pointer", display: "inline-flex", width: "auto", padding: "6px 12px", fontSize: 12 }}
+                  >
+                    Choose PNG File
+                  </label>
+                  {offlineVerificationStatus === "verifying" && (
+                    <p className="integrity-status pending" style={{ marginTop: 8, fontSize: 12 }}>Verifying on-chain...</p>
+                  )}
+                  {offlineVerificationStatus === "success" && (
+                    <div style={{ marginTop: 8 }}>
+                      <p className="integrity-status success" style={{ fontSize: 12, fontWeight: "bold" }}>
+                        ✓ Recoverable Proof Verified On-Chain!
+                      </p>
+                      {offlineScreenshotB64 && (
+                        <div className="screenshot-box" style={{ marginTop: 8 }}>
+                          <img src={`data:image/png;base64,${offlineScreenshotB64}`} alt="Verified offline screenshot" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {offlineVerificationStatus === "fail" && (
+                    <p className="integrity-status fail" style={{ marginTop: 8, fontSize: 12 }}>
+                      ✗ Verification Failed: Screenshot does not match stored hash.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
