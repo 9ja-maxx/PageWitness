@@ -243,3 +243,27 @@ def test_invalid_boolean_coercion_reverts(direct_vm, direct_deploy, direct_alice
     direct_vm.value = FEE
     with direct_vm.expect_revert("Ambiguous boolean"):
         c.request_attestation("https://example.com", "Shows supply?")
+
+
+def test_recoverable_proof_verification(direct_vm, direct_deploy, direct_alice):
+    c = direct_deploy(CONTRACT, FEE, sdk_version="v0.2.1")
+    _mock_eval(direct_vm)
+    direct_vm.sender = direct_alice
+    direct_vm.value = FEE
+
+    # Request attestation WITH screenshot storage option
+    aid = c.request_attestation("https://example.com", "Shows supply?", True)
+    assert c.get_attestation_count() == "1"
+
+    rec = c.get_attestation(0)
+    screenshot_b64 = rec["screenshot_b64"]
+
+    # Verify with correct screenshot data -> True
+    assert c.verify_screenshot_data(0, screenshot_b64) is True
+
+    # Verify with incorrect screenshot data -> False
+    mismatched_b64 = base64.b64encode(b"mismatched data").decode("ascii")
+    assert c.verify_screenshot_data(0, mismatched_b64) is False
+
+    # Verify with non-existent ID -> False
+    assert c.verify_screenshot_data(999, screenshot_b64) is False

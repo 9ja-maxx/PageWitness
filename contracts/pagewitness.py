@@ -105,8 +105,18 @@ class PageWitness(gl.Contract):
             if bool(my_data["claim_present"]) != bool(leader_data["claim_present"]):
                 return False
 
-            # 2. Basic safety check: Ensure screenshot hashes are present.
-            if not my_data.get("screenshot_hash") or not leader_data.get("screenshot_hash"):
+            # 2. Bind agreed verdict/evidence to exact screenshot bytes by verifying leader's screenshot hash.
+            try:
+                leader_screenshot_b64 = leader_data.get("screenshot_b64", "")
+                leader_screenshot_bytes = base64.b64decode(leader_screenshot_b64)
+                computed_hash = hashlib.sha256(leader_screenshot_bytes).hexdigest()
+                if computed_hash != leader_data.get("screenshot_hash"):
+                    return False
+            except Exception:
+                return False
+
+            # Ensure validator's own screenshot hash is also present as a safety check
+            if not my_data.get("screenshot_hash"):
                 return False
 
             # 3. Semantic comparison: Use the Equivalence Principle to compare the textual findings.
@@ -205,6 +215,22 @@ class PageWitness(gl.Contract):
         if attestation_id not in self.attestations:
             raise gl.vm.UserError(f"{ERROR_EXPECTED} Record not found for ID: {attestation_id}")
         return self._serialize(attestation_id, self.attestations[attestation_id])
+
+    @gl.public.view
+    def verify_screenshot_data(self, attestation_id: u256, screenshot_b64: str) -> bool:
+        """
+        Recoverable proof path: Verify offline screenshot bytes against the stored on-chain hash.
+        This enables verifying audit validity even when store_screenshot was disabled.
+        """
+        if attestation_id not in self.attestations:
+            return False
+        a = self.attestations[attestation_id]
+        try:
+            screenshot_bytes = base64.b64decode(screenshot_b64)
+            computed_hash = hashlib.sha256(screenshot_bytes).hexdigest()
+            return computed_hash == a.screenshot_hash
+        except Exception:
+            return False
 
     @gl.public.view
     def get_attestations_by(self, requester: str) -> dict:
